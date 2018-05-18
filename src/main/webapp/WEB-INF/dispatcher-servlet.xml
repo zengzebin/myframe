@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+       ">
+
+	<!-- 添加注解驱动 -->
+	<aop:aspectj-autoproxy proxy-target-class="true" />
+	<!-- 扫描@Controller注解 -->
+	<context:component-scan base-package="ssxt.com.zeng.controller">
+		<context:include-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+		<!-- 配置扫描注解,不扫描@Controller注解 <context:exclude-filtertype="annotation" expression="org.springframework.stereotype.Controller"/> -->
+
+	</context:component-scan>
+	
+  
+<!-- <context:component-scan base-package="activemq.contoller"/> -->
+
+ <context:component-scan base-package="chat"/>
+	<bean id="defaultAnnotationHandlerMapping"
+		class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping" />
+	<bean id="annotationMethodHandlerAdapter"
+		class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+		<!-- 支持注解方式的格式化日期类型的参数 -->
+		<property name="webBindingInitializer">
+			<bean
+				class="org.springframework.web.bind.support.ConfigurableWebBindingInitializer">
+				<property name="conversionService">
+					<bean
+						class="org.springframework.format.support.FormattingConversionServiceFactoryBean"></bean>
+				</property>
+			</bean>
+		</property>
+		<property name="messageConverters">
+			<list>
+				<ref bean="jsonHttpMessageConverter" />
+			</list>
+		</property>
+	</bean>
+	
+	<!-- 配置视图解析器，将ModelAndView及字符串解析为具体的页面 -->
+	   <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver" 
+		p:viewClass="org.springframework.web.servlet.view.JstlView" p:prefix="/WEB-INF/jsp/" 
+		p:suffix=".jsp" />  
+	
+	 	 <!-- 方式一：对静态资源文件的访问，避免controller拦截 -->
+     <!--  <mvc:default-servlet-handler />   -->
+	
+	<!-- <mvc:resources mapping="/jsps/**" location="/WEB-INF/jsps/" /> -->
+	
+	 
+    
+   <mvc:resources mapping="/Js/**" location="/Js/"/>
+  <!--   <resources mapping="/Css/**" location="/Css/" /> -->
+	<!--  <resources mapping="/Images/**" location="/Images/" /> -->
+
+	<bean id="jsonHttpMessageConverter"
+		class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>application/json;charset=UTF-8</value>
+			</list>
+		</property>
+	</bean>
+	
+
+
+	
+	<!-- 上传文件时需要做的配置 -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- 设置上传文件的最大尺寸为约5MB -->
+		<property name="maxUploadSize" value="5000000"></property>
+	</bean>
+
+	<!-- SpringMVC在超出上传文件限制时，会抛出org.springframework.web.multipart.MaxUploadSizeExceededException -->
+	<!-- 该异常是SpringMVC在检查上传的文件信息时抛出来的，而且此时还没有进入到Controller方法中 -->
+	<bean id="exceptionResolver"
+		class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+			<props>
+				<!-- 遇到MaxUploadSizeExceededException异常时，自动跳转到/WEB-INF/jsp/error_fileupload.jsp页面 -->
+				<prop
+					key="org.springframework.web.multipart.MaxUploadSizeExceededException">error_fileupload</prop>
+			</props>
+		</property>
+	</bean>
+
+	<mvc:interceptors>
+
+		<!-- 使用bean定义一个Interceptor，直接定义在mvc:interceptors根下面的Interceptor将拦截所有的请求 -->
+		<bean class="Interceptor.SpringMVCInterceptor">
+			<property name="uncheckPaths">
+				<list>
+					<value>/api/users/login</value>
+				</list>
+			</property>
+		</bean>
+
+
+		<!-- 开启openSessionInView -->
+	  	 <bean id="open1"
+			class="org.springframework.orm.hibernate3.support.OpenSessionInViewInterceptor">
+			<property name="sessionFactory" ref="sessionFactory" />
+			<property name="flushMode" value="1" />
+		</bean>   
+		
+		 <!-- <bean id="open2"
+			class="org.springframework.orm.hibernate3.support.OpenSessionInViewInterceptor">
+			<property name="sessionFactory" ref="hisSessionFactory" />
+			<property name="flushMode" value="1" />
+		</bean>   -->
+		<!-- 自定义的权限拦截验证，如果不定义 mvc:mapping path 将拦截所有的URL请求 -->
+		<!-- <bean class="com.website.hpuxiaoyoulu.web.auth.AuthInterceptor"> </bean> -->
+	</mvc:interceptors>
+</beans>
